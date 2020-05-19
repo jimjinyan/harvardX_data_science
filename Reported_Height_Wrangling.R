@@ -78,3 +78,24 @@ remining_problems<- converted[not_inches_or_cm(converted)]
 pattern<- "^[4-7]\\s*\\d+\\.?\\d*$"
 index<- str_detect(remining_problems, pattern)
 remining_problems[!index]
+
+
+
+
+
+pattern <- "^([4-7])\\s*'\\s*(\\d+\\.?\\d*)$"
+
+new_heights<- reported_heights%>%
+  mutate(original = height, height =  words_to_numbers(height)%>%convert_format())%>%
+  extract(height, c("feet", "inches"), regex = pattern, remove = FALSE)%>%
+  mutate_at(c("height", "feet", "inches"), as.numeric)%>%
+  mutate(guess = 12*feet + inches)%>%
+  mutate(height = case_when(
+    !is.na(height)&between(height, smallest, tallest) ~ height,
+    !is.na(height)&between(height/2.54, smallest, tallest) ~ height/2.54,
+    !is.na(height)&between(height*100/2.54, smallest, tallest) ~ height*100/2.54,
+    !is.na(guess)&inches<12&between(guess, smallest, tallest) ~ guess,
+    TRUE ~as.numeric(NA)
+  ))%>%select(-guess)
+
+new_heights %>% arrange(height) %>% head(n=7)
